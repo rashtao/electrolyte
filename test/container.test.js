@@ -1,5 +1,5 @@
 /* global describe, it, expect */
-
+var expect = require('chai').expect;
 var Container = require('../lib/container');
 
 
