@@ -34,8 +34,8 @@
     "debug": "0.7.x"
   },
   "devDependencies": {
-    "mocha": "1.x.x",
-    "chai": "1.x.x"
+    "mocha": "latest",
+    "chai": "latest"
   },
   "contributors": [
     {
