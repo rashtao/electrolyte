@@ -37,8 +37,8 @@ Primate.prototype.eat = function() {
 describe('Container#constructor', function() {
   var container = new Container();
   container.constructor('bacteria', Bacteria);
-  container.constructor('fish', [ 'bacteria' ], Fish);
-  container.constructor('primate', [ 'fish', 'bacteria' ], Primate);
+  container.constructor('fish', Fish, [ 'bacteria' ]);
+  container.constructor('primate', Primate, [ 'fish', 'bacteria' ]);
   
   describe('creating an object with no dependencies', function() {
     var obj = container.create('bacteria');

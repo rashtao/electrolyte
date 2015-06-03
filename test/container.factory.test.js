@@ -57,9 +57,9 @@ describe('Container#factory', function() {
     container.factory('counter', function() {
       return new Counter(++si);
     });
-    container.factory('doubleCounter', [ 'counter' ], function(s) {
+    container.factory('doubleCounter', function(s) {
       return new DoubleCounter(++di, s);
-    });
+    }, [ 'counter' ]);
     
     var s1 = container.create('counter');
     var obj = container.create('doubleCounter');
@@ -92,12 +92,12 @@ describe('Container#factory', function() {
     container.factory('counter', function() {
       return new Counter(++si);
     });
-    container.factory('doubleCounter', [ 'counter' ], function(s) {
+    container.factory('doubleCounter', function(s) {
       return new DoubleCounter(++di, s);
-    });
-    container.factory('tripleCounter', [ 'doubleCounter', 'counter' ], function(d, s) {
+    }, [ 'counter' ]);
+    container.factory('tripleCounter', function(d, s) {
       return new TripleCounter(++ti, d, s);
-    });
+    }, [ 'doubleCounter', 'counter' ]);
     
     var s1 = container.create('counter');
     var d1 = container.create('doubleCounter');
