@@ -245,8 +245,8 @@ exports['@type'] = 'setterInjection';
 ```
 
 ```javascript
-IoC.register('service1', service1);
-IoC.register('service2', service2);
+IoC.register('service1', require('./service1'));
+IoC.register('service2', require('./service2'));
 
 var s1 = IoC.create('service1');
 var s2 = IoC.create('service2');
@@ -293,8 +293,8 @@ exports['@type'] = 'setterInjection';
 ```
 
 ```javascript
-IoC.register('service1', service1);
-IoC.register('service2', service2);
+IoC.register('service1', require('./service1'));
+IoC.register('service2', require('./service2'));
 
 var s1 = IoC.create('service1');
 var s2 = IoC.create('service2');
@@ -302,6 +302,42 @@ var s2 = IoC.create('service2');
 expect(s1.other).to.equal(s2);
 expect(s2.other).to.equal(s1);
 ```
+
+
+## Registering components without annotations
+
+All the information declared with annotation can alternatively be specified in the registration command.
+
+```javascript
+// config.js
+
+exports = module.exports = {
+	name: "config"
+};
+```
+
+```javascript
+// service.js
+
+exports = module.exports = function (config) {
+	return {
+		name: "service",
+		config: config
+	};
+};
+```
+
+```javascript
+IoC.register('config', require('./config'));
+IoC.register('service', require('./service'));
+
+var s1 = IoC.create('service1');
+var s2 = IoC.create('service2');
+
+expect(s1.other).to.equal(s2);
+expect(s2.other).to.equal(s1);
+```
+
 
 
 
