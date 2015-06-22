@@ -306,7 +306,19 @@ expect(s2.other).to.equal(s1);
 
 ## Registering components without annotations
 
-All the information declared with annotation can alternatively be specified in the registration command.
+All the information declared with annotation can alternatively be specified in the registration command using the following syntax:
+
+```javascript
+IoC.register(identifier, component, dependencies, type, injectionType);
+```
+
+- {String} **identifier**
+- {value|Object|function} **component**
+- {Array|Object} **dependencies** can be an array or a map, default []
+- {'@literal'|'@singleton'|'@factory'|'@constructor'} **type**
+- {'constructorInjection'|'setterInjection'} **injectionType**, default 'constructorInjection'
+
+For example:
 
 ```javascript
 // config.js
@@ -375,8 +387,10 @@ Let define the namespace associated with the identifier `A` to be the hierarchy 
 identifiers of the components in which `A` is nested and the identifier `A` itself, concatenated using a `.` .
 So in the previous example the namespace of `config` will be `service.config`.
 
-When IoC tries to create a component, it will try first to create
-For example:
+When IoC tries to create a component, it will search first for a component having identifier
+equal to the full namespace. In case there are no components registered having that identifier,
+the IoC will search for a component having identifier equal to the full namespace from the first nested component to the
+current component, and so on. For example:
 
 ```javascript
 // service1.js
@@ -439,23 +453,10 @@ var s3 = IoC.create('service3');
 expect(s3.nested.nested).to.equal(overriddenService);
 ```
 
-
-
-
-
-If we want to override a component only under a certain namespace
-
-
-
-
-
-
-
-
-
-
-
-
+This feature can be used for customizing the different behaviours of a module included many times in our program, eg. if
+we want to assign a custom configuration to the logger of a specific component. Let's assume that we have the component
+`Logger` having identifier 'Logger' and having a dependency 'LoggerConfig'. If we want so assign a custom configuration to the logger
+used by our `service1` component, we can override its configuration registering a component having identifier `service1.Logger.LoggerConfig`.
 
 
 ## Examples
