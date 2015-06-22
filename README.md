@@ -102,6 +102,13 @@ We can also explicitly create the `config` component:
 var config = IoC.create('config');
 ```
 
+## @require
+
+`@require` annotation provide an extra bit of metadata about the component, which
+Electrolyte uses to automatically wire together an application.
+It declares the dependencies needed by the component.  These dependencies are automatically created and injected.
+
+
 ## Components types
 
 There are 4 types of components and they differ in the creation phase:
@@ -157,6 +164,8 @@ exports['@factory'] = true;
 ```
 
 ```javascript
+IoC.register('factory', require('./factory'));
+
 var f1 = IoC.create('factory');
 var f2 = IoC.create('factory');
 expect(f1.index).to.equal(1);
@@ -179,6 +188,8 @@ exports['@constructor'] = true;
 ```
 
 ```javascript
+IoC.register('constructor', require('./constructor'));
+
 var c1 = IoC.create('constructor');
 var c2 = IoC.create('constructor');
 expect(c1.index).to.equal(1);
@@ -188,27 +199,113 @@ expect(c2.index).to.equal(2);
 
 ## Constructor Injection
 
-as arguments (in the same
-   order as listed in the array)
+In the previous examples we used always the [Constructor Injection](https://en.wikipedia.org/wiki/Dependency_injection#Constructor_injection).
+The dependencies will be injected as arguments when calling
+the function exported by the component, in the same order as they are listed in the `@require` array.
+
+With this approach, we have two main limitations:
+  - the injection is made considering only the order of the paramenters
+  - if we have a cycle in the dependecies graph, our code will generate a recursive loop
 
 ## Setter Injection
 
+To avoid the limitation listed above, the [Setter Injection](https://en.wikipedia.org/wiki/Dependency_injection#Setter_injection) can be used.
+For a deeper understanding check [this](http://martinfowler.com/articles/injection.html#ConstructorVersusSetterInjection).
 
-## Annotations
+We can use the setter injection in the following way:
 
-Annotations provide an extra bit of metadata about the component, which
-Electrolyte uses to automatically wire together an application.
+```javascript
+// service1.js
 
-- `@require`  Declares the dependencies needed by the component.  These
-   dependencies are automatically created and injected.
+exports = module.exports = function () {
+   return {
+	   name: "service1",
+	   service2: service2
+   };
+};
+
+exports['@singleton'] = true;
+exports['@require'] = ['service2'];
+exports['@type'] = 'setterInjection';
+```
+
+```javascript
+// service2.js
+
+exports = module.exports = function () {
+	return {
+        name: "service2",
+        service1: service1
+    };
+};
+
+exports['@singleton'] = true;
+exports['@require'] = ['service1'];
+exports['@type'] = 'setterInjection';
+```
+
+```javascript
+IoC.register('service1', service1);
+IoC.register('service2', service2);
+
+var s1 = IoC.create('service1');
+var s2 = IoC.create('service2');
+
+expect(s1.service2).to.equal(s2);
+expect(s2.service1).to.equal(s1);
+```
+
+### Specifying field names
+
+Using the Setter Injection the required dependencies can be specified also using a map in place of a list.
+With this approach, the key of a map entry specifies the name of the field of the component that we are creating,
+and the value of a map entry specifies the name of the component that will be injected in that field. For example, We can rewrite the
+previous example injecting the same dependencies in other fields:
+
+```javascript
+// service1.js
+
+exports = module.exports = function () {
+   return {
+	   name: "service1",
+	   other: service2
+   };
+};
+
+exports['@singleton'] = true;
+exports['@require'] = {other: 'service2'};
+exports['@type'] = 'setterInjection';
+```
+
+```javascript
+// service2.js
+
+exports = module.exports = function () {
+	return {
+        name: "service2",
+        other: service1
+    };
+};
+
+exports['@singleton'] = true;
+exports['@require'] = {other: 'service1'};
+exports['@type'] = 'setterInjection';
+```
+
+```javascript
+IoC.register('service1', service1);
+IoC.register('service2', service2);
+
+var s1 = IoC.create('service1');
+var s2 = IoC.create('service2');
+
+expect(s1.other).to.equal(s2);
+expect(s2.other).to.equal(s1);
+```
 
 
 
 
-
-
-- `@singleton`  Indicates that the component returns a singleton object, which
-  should be shared by all components in the application.
 
 
 
