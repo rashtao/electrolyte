@@ -1,7 +1,6 @@
 ![Logo](logo.png)
 # Electrolyte
 
-
 Electrolyte is a simple, lightweight [inversion of control](http://en.wikipedia.org/wiki/Inversion_of_control)
 (IoC) container for Node.js applications.
 
@@ -16,178 +15,128 @@ For further details about the software architecture used for IoC and dependency
 injection, refer to [Inversion of Control Containers and the Dependency Injection pattern](http://martinfowler.com/articles/injection.html)
 by [Martin Fowler](http://martinfowler.com/).
 
-## Install
-
-    $ npm install electrolyte
-
-## Usage
-
 There are two important terms to understand when using Electrolyte:
 components and annotations.
 
-#### Components
+## IoC Container
+
+IoC container can be instantiated with:
+
+```javascript
+var IoC = require('electrolyte');
+```
+
+## Components
 
 Components are simply modules which return objects used within an application.
-For instance, a typical web application might need a place to store settings, a
-database connection, and a logging facility.
+There are 4 types of components:
+- literal
+- singleton
+- constructor
+- factory
 
-Here's a component that initializes settings:
+Components can be registered in the IoC Container, so that when required the IoC will
+provide to instantiate and return the object.
+
+Components can be declared through annotations or explicitly.
+
+### Declaring components by annotations
+
+A component can be declared using annotations. In the following examples we create two
+components (service1 and service2), with service2 depending on service1:
 
 ```javascript
-exports = module.exports = function() {
-  var settings = {}
-    , env = process.env.NODE_ENV || 'development';
+// service1.js
 
-  switch (env) {
-    case 'production':
-      settings.dbHost = 'sql.example.com';
-      settings.dbPort = 3306;
-      break;
-    default:
-      settings.dbHost = '127.0.0.1';
-      settings.dbPort = 3306;
-      break;
-  }
+var MyService = function () {
+	this.name = "service1";
+};
 
-  return settings;
-}
+exports = module.exports = function () {
+	return new MyService();
+};
 
 exports['@singleton'] = true;
 ```
 
-Pretty simple.  A component exports a "factory" function, which is used to
-create and initialize an object.  In this case, it just sets a couple options
-depending on the environment.
-
-What about `exports['@singleton']`?  That's an annotation, and we'll return to
-that in a moment.
-
-
-Here's another component that initializes a database connection:
-
 ```javascript
-var mysql = require('mysql');
+// service2.js
 
-exports = module.exports = function(settings) {
-  var connection = mysql.createConnection({
-    host: settings.dbHost,
-    port: settings.dbPort
-  });
+var MyService = function (service1) {
+	this.service1 = service1;
+	this.name = "service2";
+};
 
-  connection.connect(function(err) {
-    if (err) { throw err; }
-  });
-
-  return connection;
-}
+exports = module.exports = function (service1) {
+	return new MyService(service1);
+};
 
 exports['@singleton'] = true;
-exports['@require'] = [ 'settings' ];
+exports['@require'] = ['service1'];
 ```
 
-Also very simple.  A function is exported which creates a database connection.
-And those annotations appear again.
+### Registering components
 
-#### Annotations
+Once that a component is declared, it should be registered into the IoC. For example we
+can register service1 and service2:
 
-Annotations provide an extra bit of metadata about the component, which
-Electrolyte uses to automatically wire together an application.
+```javascript
+IoC.register("service1", require("service1"));
+IoC.register("service2", require("service2"));
+```
 
-- `@require`  Declares an array of dependencies needed by the component.  These
-   dependencies are automatically created and injected as arguments (in the same
-   order as listed in the array) to the exported function.
-
-- `@singleton`  Indicates that the component returns a singleton object, which
-  should be shared by all components in the application.
-
-#### Creating Components
+### Creating components
 
 Components are created by asking the IoC container to create them:
 
 ```javascript
 var IoC = require('electrolyte');
-
-var db = IoC.create('database');
+var service2 = IoC.create('service2');
 ```
 
 Electrolyte is smart enough to automatically traverse a component's dependencies
 (and dependencies of dependencies, and so on), correctly wiring together the
 complete object structure.
 
-In the case of the database above, Electrolyte would first initialize the
-`settings` component, and pass the result as an argument to the `database`
-component.  The database connection would then be returned from `IoC.create`.
+In the case of the example above, Electrolyte would first initialize the
+`service1` component, and then inject the result as an argument to the `service2`
+component.  `service2` would then be returned from `IoC.create`.
 
 This automatic instantiation and injection of components eliminates the
 boilerplate plumbing many application need for initialization.
 
-#### Configure the Loader
 
-When a component is `@require`'d by another component, Electrolyte will
-automatically load and instantiate it.  The loader needs to be configured with
-location where an application's components are found:
+## Constructor Injection
 
-```javascript
-IoC.loader(IoC.node('app/components'));
-```
+as arguments (in the same
+   order as listed in the array)
 
-#### @require vs require()
+## Setter Injection
 
-Loading components is similar in many regards to `require`ing a module, with
-one primary difference: components have the ability to return an object that
-is configured according to application-level or environment-specific settings.
-Traditional modules, in contrast, assume very little about the runtime
-configuration of an application and export common, reusable bundles of
-functionality.
 
-Using the strengths of each approach yields a nicely layered architecture, which
-can be seen in the database component above.  The `mysql` module provides
-reusable functionality for communicating with MySQL databases.  The database
-component provides a _configured instance_ created from that module that
-connects to a specific database.
+## Annotations
 
-This pattern is common: modules are `require()`'d, and object instances created
-from those modules are `@require`'d.
+Annotations provide an extra bit of metadata about the component, which
+Electrolyte uses to automatically wire together an application.
 
-There are scenarios in which this line can blur, and it becomes desireable to
-inject modules themselves.  This is typical with modules that provide
-network-related functionality that needs to be mocked out in test environments.
+- `@require`  Declares the dependencies needed by the component.  These
+   dependencies are automatically created and injected.
 
-Electrolyte can be configured to do this automatically, by configuring the loader
-to inject modules:
 
-```javascript
-IoC.loader(IoC.node_modules());
-````
 
-With that in place, the database component above can be re-written as follows:
 
-```javascript
-exports = module.exports = function(mysql, settings) {
-  var connection = mysql.createConnection({
-    host: settings.dbHost,
-    port: settings.dbPort
-  });
 
-  connection.connect(function(err) {
-    if (err) { throw err; }
-  });
 
-  return connection;
-}
+- `@singleton`  Indicates that the component returns a singleton object, which
+  should be shared by all components in the application.
 
-exports['@singleton'] = true;
-exports['@require'] = [ 'mysql', 'settings' ];
-```
 
-Note that now the `mysql` module is injected by Electrolyte, rather than
-explicitly `require()`'d.  This makes it easy to write tests for this component
-while mocking out network access entirely.
+
 
 ## Examples
 
-- __[Express](https://github.com/jaredhanson/electrolyte/tree/master/examples/express)__
-  An example Express app using IoC to create routes, with necessary components.
+- __[electrolyte-test](https://github.com/rashtao/electrolyte-test)__
+  A full test of all the functionalities.
 
 ## Tests
 
@@ -196,6 +145,7 @@ while mocking out network access entirely.
 
 ## Credits
 
+  - [Michele Rastelli](http://github.com/rashtao)
   - [Jared Hanson](http://github.com/jaredhanson)
   - Atomic by Cengiz SARI from The Noun Project
   - [Colour palette](http://www.colourlovers.com/palette/912371/Electrolytes)
