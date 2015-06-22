@@ -319,24 +319,136 @@ exports = module.exports = {
 ```javascript
 // service.js
 
-exports = module.exports = function (config) {
+exports = module.exports = function () {
 	return {
-		name: "service",
-		config: config
+		name: "service"
 	};
 };
 ```
 
 ```javascript
-IoC.register('config', require('./config'));
-IoC.register('service', require('./service'));
 
-var s1 = IoC.create('service1');
-var s2 = IoC.create('service2');
+IoC.register('config', require('./config'), "@literal");
+IoC.register('service', require('./service'), {serviceConfig: "config"}, "@singleton", "setterInjection" );
 
-expect(s1.other).to.equal(s2);
-expect(s2.other).to.equal(s1);
+var s = IoC.create('service');
+var c = IoC.create('config');
+
+expect(s.serviceConfig).to.equal(c);
 ```
+
+
+## Overriding components
+
+A component registered in IoC can be overridden with the registration of another component with the same identifier:
+
+```javascript
+// config1.js
+
+exports = module.exports = {
+	name: "config1"
+};
+
+exports['@literal'] = true;
+```
+
+```javascript
+// config2.js
+
+exports = module.exports = {
+	name: "config2"
+};
+
+exports['@literal'] = true;
+```
+
+```javascript
+IoC.register('config', require('./config1'));
+IoC.register('config', require('./config2'));
+
+expect(config).to.equal(require('./config2'));
+```
+
+### Conditionally overriding components
+
+Let define the namespace associated with the identifier `A` to be the hierarchy of all the
+identifiers of the components in which `A` is nested and the identifier `A` itself, concatenated using a `.` .
+So in the previous example the namespace of `config` will be `service.config`.
+
+When IoC tries to create a component, it will try first to create
+For example:
+
+```javascript
+// service1.js
+
+exports = module.exports = function () {
+	return {
+		name: "service1"
+	};
+};
+exports['@singleton'] = true;
+```
+
+```javascript
+// service2.js
+
+exports = module.exports = function (nested) {
+	return {
+		name: "service2",
+		nested: nested
+	};
+};
+exports['@singleton'] = true;
+exports['@require'] = ['service1'];
+```
+
+```javascript
+// service3.js
+
+exports = module.exports = function (nested) {
+	return {
+		name: "service",
+		nested: nested
+	};
+};
+exports['@singleton'] = true;
+exports['@require'] = ['service2'];
+```
+
+```javascript
+IoC.register('service1', require('./service1'));
+IoC.register('service2', require('./service2'));
+IoC.register('service3', require('./service3'));
+
+var s3 = IoC.create('service3');
+```
+
+When IoC has to create `service1` component, it will search first for a component named
+`service3.service2.service1`, then for `service2.service1` and finally for `service1`.
+
+So we can conditionally override a component, depending on the namespace. Eg:
+
+```javascript
+IoC.register('service1', require('./service1'));
+IoC.register('service2', require('./service2'));
+IoC.register('service3', require('./service3'));
+var overriddenService = {name: "overriddenService1"};
+IoC.register('service2.service1', overriddenService, "@literal");
+
+var s3 = IoC.create('service3');
+expect(s3.nested.nested).to.equal(overriddenService);
+```
+
+
+
+
+
+If we want to override a component only under a certain namespace
+
+
+
+
+
 
 
 
