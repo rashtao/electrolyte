@@ -29,69 +29,60 @@ var IoC = require('electrolyte');
 ## Components
 
 Components are simply modules which return objects used within an application.
-There are 4 types of components:
-- literal
-- singleton
-- constructor
-- factory
 
 Components can be registered in the IoC Container, so that when required the IoC will
 provide to instantiate and return the object.
 
 Components can be declared through annotations or explicitly.
 
-### Declaring components by annotations
+## Declaring components
 
 A component can be declared using annotations. In the following examples we create two
-components (service1 and service2), with service2 depending on service1:
+components (config and service), with service depending on config:
 
 ```javascript
-// service1.js
+// config.js
 
-var MyService = function () {
-	this.name = "service1";
+exports = module.exports = {
+	name: "config"
 };
 
-exports = module.exports = function () {
-	return new MyService();
-};
-
-exports['@singleton'] = true;
+exports['@literal'] = true;
 ```
 
 ```javascript
-// service2.js
+// service.js
 
-var MyService = function (service1) {
-	this.service1 = service1;
-	this.name = "service2";
-};
-
-exports = module.exports = function (service1) {
-	return new MyService(service1);
+exports = module.exports = function (config) {
+	return {
+		name: "service",
+		config: config
+	};
 };
 
 exports['@singleton'] = true;
-exports['@require'] = ['service1'];
+exports['@require'] = ['config'];
 ```
 
-### Registering components
+## Registering components
 
 Once that a component is declared, it should be registered into the IoC. For example we
 can register service1 and service2:
 
 ```javascript
-IoC.register("service1", require("service1"));
-IoC.register("service2", require("service2"));
+IoC.register("config", require("config"));
+IoC.register("service", require("service"));
 ```
 
-### Creating components
+The registration can be done providing an identifier and a component.
+
+## Creating components
 
 Components are created by asking the IoC container to create them:
 
 ```javascript
 var IoC = require('electrolyte');
-var service2 = IoC.create('service2');
+var service = IoC.create('service');
 ```
 
 Electrolyte is smart enough to automatically traverse a component's dependencies
@@ -99,11 +90,100 @@ Electrolyte is smart enough to automatically traverse a component's dependencies
 complete object structure.
 
 In the case of the example above, Electrolyte would first initialize the
-`service1` component, and then inject the result as an argument to the `service2`
-component.  `service2` would then be returned from `IoC.create`.
+`config` component, and then inject the result as an argument to the `service`
+component. `service` would then be returned from `IoC.create`.
 
 This automatic instantiation and injection of components eliminates the
 boilerplate plumbing many application need for initialization.
+
+We can also explicitly create the `config` component:
+
+```javascript
+var config = IoC.create('config');
+```
+
+## Components types
+
+There are 4 types of components and they differ in the creation phase:
+- **@literal**
+- **@singleton**
+- **@factory**
+- **@constructor**
+
+### @literal
+
+When a `@literal` component is created, the value (object or function) exported in the component is returned.
+In the previous example we registered a `@literal` component with the identifier `config`.
+So when we create the `config` component we get the object exported in `config.js`.
+This is identical to requiring `config.js`, eg:
+
+```javascript
+var c1 = IoC.create('config');
+var c2 = require('./config');
+expect(c1).to.equal(c2);
+```
+
+### @singleton
+
+The first time that a `@singleton` component is created, the function exported in the component is executed and the return
+value will be returned for all the following times that the component will be created.
+
+In the previous example we registered a `@singleton` component with the identifier `config`.
+So every time that we create the `service` component, we get the object returned
+by the first execution of the function exported in `service.js`, eg:
+
+```javascript
+var s1 = IoC.create('service');
+var s2 = IoC.create('service');
+expect(s1).to.equal(s2);
+```
+
+### @factory
+
+When a `@factory` component is created, the function exported in the component is executed and the return
+value is returned.
+
+```javascript
+// factory.js
+
+var i = 0;
+exports = module.exports = function () {
+	return {
+		index: ++i
+	};
+};
+
+exports['@factory'] = true;
+```
+
+```javascript
+var f1 = IoC.create('factory');
+var f2 = IoC.create('factory');
+expect(f1.index).to.equal(1);
+expect(f2.index).to.equal(2);
+```
+
+### @constructor
+
+When a `@constructor` component is created, a new object is created using the function exported in the component as constructor.
+
+```javascript
+// constructor.js
+
+var i = 0;
+exports = module.exports = function () {
+	this.index = ++i;
+};
+
+exports['@constructor'] = true;
+```
+
+```javascript
+var c1 = IoC.create('constructor');
+var c2 = IoC.create('constructor');
+expect(c1.index).to.equal(1);
+expect(c2.index).to.equal(2);
+```
 
 
 ## Constructor Injection
