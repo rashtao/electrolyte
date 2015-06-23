@@ -313,10 +313,10 @@ IoC.register(identifier, component, dependencies, type, injectionType);
 ```
 
 - {String} **identifier**
-- {value|Object|function} **component**
-- {Array|Object} **dependencies** can be an array or a map, default []
-- {'@literal'|'@singleton'|'@factory'|'@constructor'} **type**
-- {'constructorInjection'|'setterInjection'} **injectionType**, default 'constructorInjection'
+- {value | Object | function} **component**
+- {Array | Object} **dependencies** can be an array or a map, default an empty array
+- {'@literal' | '@singleton' | '@factory' | '@constructor'} **type**, default `@factory`
+- {'constructorInjection' | 'setterInjection'} **injectionType**, default 'constructorInjection'
 
 For example:
 
