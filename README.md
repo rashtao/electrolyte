@@ -267,8 +267,7 @@ previous example injecting the same dependencies in other fields:
 
 exports = module.exports = function () {
    return {
-	   name: "service1",
-	   other: service2
+	   name: "service1"
    };
 };
 
@@ -282,8 +281,7 @@ exports['@type'] = 'setterInjection';
 
 exports = module.exports = function () {
 	return {
-        name: "service2",
-        other: service1
+        name: "service2"
     };
 };
 
