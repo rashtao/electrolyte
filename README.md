@@ -53,7 +53,11 @@ exports['@literal'] = true;
 ```javascript
 // service.js
 
-exports = module.exports = function (config) {
+exports = module.exports = function (config, optionalDep) {
+	if(optionalDep) {
+		console.log("optionalDep present");
+	}
+
 	return {
 		name: "service",
 		config: config
@@ -62,6 +66,7 @@ exports = module.exports = function (config) {
 
 exports['@singleton'] = true;
 exports['@require'] = ['config'];
+exports['@optional'] = ['optionalDep'];
 ```
 
 ## Registering components
@@ -102,11 +107,33 @@ We can also explicitly create the `config` component:
 var config = IoC.create('config');
 ```
 
+### Anonymously Registering and creating components
+
+`IoC.exec` method registers the provided function/object anonymously and then creates it (providing the deps).
+
+```javascript
+// 'myDep' already registered
+
+var myFunc = function(myDep){
+	console.log("here is my dep!");
+	return myDep;
+};
+myFunc['@require'] = ['myDep'];
+
+var result = IoC.exec(myFunc);
+```
+
+
 ## @require
 
 `@require` annotation provide an extra bit of metadata about the component, which
 Electrolyte uses to automatically wire together an application.
 It declares the dependencies needed by the component.  These dependencies are automatically created and injected.
+
+## @optional
+
+`@optional` annotation declares the dependencies optionally needed by the component. In case these dependencies are
+registered Electrolyte will automatically create and inject, otherwise `null` will be injected.
 
 
 ## Components types
