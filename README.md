@@ -484,6 +484,12 @@ we want to assign a custom configuration to the logger of a specific component. 
 used by our `service1` component, we can override its configuration registering a component having identifier `service1.Logger.LoggerConfig`.
 
 
+## Debug
+
+```js
+IoC.setLogLevel("trace");
+```
+
 ## Examples
 
 - __[electrolyte-test](https://github.com/rashtao/electrolyte-test)__
