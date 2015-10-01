@@ -1,6 +1,6 @@
 {
   "name": "electrolyte",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Elegant dependency injection for Node.js.",
   "keywords": [
     "require",
@@ -31,7 +31,8 @@
   "main": "./lib",
   "dependencies": {
     "scripts": "0.1.x",
-    "debug": "0.7.x"
+    "bunyan": "^1.3.5",
+    "bunyan-format": "^0.2.1"
   },
   "devDependencies": {
     "mocha": "latest",
